@@ -1,97 +1,75 @@
+# game/hero.py
 import pygame
 import math
 import random
+from .game_object import GameObject
+from config import HEDGEHOG_START_POS
 
-class Hedgehog:
+class Hedgehog(GameObject):
     def __init__(self):
+        super().__init__(HEDGEHOG_START_POS[0], HEDGEHOG_START_POS[1], 'assets/image/hedgehog_down.png')
         self.images = {
-            'down': pygame.image.load('assets/image/hedgehog_down.png'), # Загрузка изображений
+            'down': pygame.image.load('assets/image/hedgehog_down.png'),
             'up': pygame.image.load('assets/image/hedgehog_up.png'),
             'left': pygame.image.load('assets/image/hedgehog_left.png'),
             'right': pygame.image.load('assets/image/hedgehog_right.png')
         }
-        self.x = 430 #  начальные координаты и скорость
-        self.y = 600
         self.speed = 10
         self.current_img = self.images['down']
-        self.width = self.images['down'].get_width()
-        self.height = self.images['down'].get_height()
+        self.rect = self.current_img.get_rect(topleft=(self.rect.x, self.rect.y))
 
     def move(self, keys, screen_width, screen_height):
-        # Сохраняем старую позицию для коллизий
-        old_x, old_y = self.x, self.y
-
-        # Обработка управления
+        old_pos = self.rect.copy()
+        
         if keys[pygame.K_LEFT]:
-            self.x -= self.speed
+            self.rect.x -= self.speed
             self.current_img = self.images['left']
         if keys[pygame.K_RIGHT]:
-            self.x += self.speed
+            self.rect.x += self.speed
             self.current_img = self.images['right']
         if keys[pygame.K_UP]:
-            self.y -= self.speed
+            self.rect.y -= self.speed
             self.current_img = self.images['up']
         if keys[pygame.K_DOWN]:
-            self.y += self.speed
+            self.rect.y += self.speed
             self.current_img = self.images['down']
 
         # Границы экрана
-        self.x = max(0, min(self.x, screen_width - self.width))
-        self.y = max(0, min(self.y, screen_height - self.height))
+        self.rect.x = max(0, min(self.rect.x, screen_width - self.rect.width))
+        self.rect.y = max(0, min(self.rect.y, screen_height - self.rect.height))
 
-        return old_x, old_y  # Возвращаем для проверки коллизий
+        return old_pos
 
     def draw(self, screen):
-        screen.blit(self.current_img, (self.x, self.y))
+        screen.blit(self.current_img, self.rect)
 
-
-
-
-
-
-
-
-class Firefly:
+class Firefly(GameObject):
     def __init__(self):
-        self.img = pygame.image.load('assets/image/fly.png')
-        self.x = random.randint(0, 960 - self.img.get_width())
-        self.y = random.randint(0, 768 - self.img.get_height())
-        self.width = self.img.get_width()
-        self.height = self.img.get_height()
+        super().__init__(
+            random.randint(0, 960 - 32), 
+            random.randint(0, 768 - 32),
+            'assets/image/fly.png'
+        )
+        self.alpha = 255
 
     def update(self):
-        # Мерцание
         self.alpha = 128 + int(128 * math.sin(pygame.time.get_ticks() * 0.003))
+        # Создаем копию изображения для установки альфа-канала
+        self.image = pygame.image.load('assets/image/fly.png').convert_alpha()
+        self.image.set_alpha(self.alpha)
 
-    def draw(self, screen):
-        img_copy = self.img.copy()
-        img_copy.set_alpha(self.alpha)
-        screen.blit(img_copy, (self.x, self.y))
-
-
-
-
-
-
-
-
-
-
-class Mob:
+class Mob(GameObject):
     def __init__(self, speed):
-        self.img = pygame.image.load('assets/image/okak.png')
-        self.x = random.randint(0, 960 - self.img.get_width())
-        self.y = random.randint(0, 768 - self.img.get_height())
+        super().__init__(
+            random.randint(0, 960 - 64), 
+            random.randint(0, 768 - 64),
+            'assets/image/okak.png'
+        )
         self.speed = speed
-        self.width = self.img.get_width()
-        self.height = self.img.get_height()
 
-    def chase(self, target_x, target_y):
-        dx = target_x - self.x
-        dy = target_y - self.y
+    def chase(self, target_rect):
+        dx = target_rect.x - self.rect.x
+        dy = target_rect.y - self.rect.y
         dist = max(1, math.sqrt(dx*dx + dy*dy))
-        self.x += dx / dist * self.speed
-        self.y += dy / dist * self.speed
-
-    def draw(self, screen):
-        screen.blit(self.img, (self.x, self.y))
+        self.rect.x += dx / dist * self.speed
+        self.rect.y += dy / dist * self.speed
