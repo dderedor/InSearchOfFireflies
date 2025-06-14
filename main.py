@@ -8,6 +8,8 @@ from config import *
 class Game:
     def __init__(self):
         pygame.init()
+        pygame.mixer.init()  # Инициализация аудио системы
+        
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption('Ёжик и светлячки')
         
@@ -17,6 +19,17 @@ class Game:
             pygame.display.set_icon(icon)
         except:
             pass
+        
+        # Инициализация музыки
+        self.music_on = True  # Флаг состояния музыки
+        try:
+            # ЗАМЕНИТЕ MUSIC_FILE НА ПУТЬ К ВАШЕМУ МУЗЫКАЛЬНОМУ ФАЙЛУ
+            pygame.mixer.music.load(MUSIC_FILE)
+            pygame.mixer.music.set_volume(MUSIC_VOLUME)  # Установка громкости
+            pygame.mixer.music.play(-1)  # -1 означает бесконечное повторение
+        except Exception as e:
+            print(f"Ошибка загрузки музыки: {e}")
+            self.music_on = False
         
         # Игровые состояния
         self.state = "menu"  # menu, playing, death, win
@@ -57,33 +70,15 @@ class Game:
             for event in events:
                 if event.type == pygame.QUIT:
                     running = False
+                elif self.state != "playing":
+                    # Обработка кнопок в меню
+                    clicked_button = self.menus[self.state].handle_event(event)
+                    if clicked_button:
+                        self.handle_menu_button(clicked_button)
             
-            # Обработка состояний игры
-            if self.state == "menu":
-                action = self.handle_menu(events)
-                if action == "начать игру":
-                    self.state = "playing"
-                elif action == "выход":
-                    running = False
-            
-            elif self.state == "playing":
+            # Обработка игровых событий в состоянии playing
+            if self.state == "playing":
                 self.handle_playing(events)
-            
-            elif self.state == "death":
-                action = self.handle_menu(events)
-                if action == "начать заново":
-                    self.reset_game()
-                    self.state = "playing"
-                elif action == "выход":
-                    running = False
-            
-            elif self.state == "win":
-                action = self.handle_menu(events)
-                if action == "играть заново":
-                    self.reset_game()
-                    self.state = "playing"
-                elif action == "выход":
-                    running = False
             
             # Отрисовка
             self.draw()
@@ -94,13 +89,30 @@ class Game:
         
         pygame.quit()
     
-    def handle_menu(self, events):
-        """Обработка событий меню"""
-        for event in events:
-            result = self.menus[self.state].handle_event(event)
-            if result:
-                return result
-        return None
+    def handle_menu_button(self, button):
+        """Обработка нажатий на кнопки в меню"""
+        # Если нажата кнопка переключения музыки
+        if isinstance(button, ToggleButton):
+            button.toggle()
+            self.music_on = button.state
+            if self.music_on:
+                pygame.mixer.music.play(-1)  # Запуск музыки
+                pygame.mixer.music.set_volume(MUSIC_VOLUME)
+            else:
+                pygame.mixer.music.stop()  # Остановка музыки
+        
+        # Если нажата кнопка игры/перезапуска
+        elif "Играть" in button.text or "Заново" in button.text or "Ещё раз" in button.text:
+            self.reset_game()
+            self.state = "playing"
+            if self.music_on:
+                pygame.mixer.music.play(-1)  # Перезапуск музыки при начале игры
+        
+        # Если нажата кнопка выхода
+        elif "Выход" in button.text:
+            return False  # Сигнал для выхода из игры
+        
+        return True
     
     def handle_playing(self, events):
         """Обработка игровых событий"""
@@ -145,11 +157,7 @@ class Game:
         if self.state == "playing":
             self.draw_game()
         else:
-            self.draw_menu()
-    
-    def draw_menu(self):
-        """Отрисовка меню"""
-        self.menus[self.state].draw(self.screen)
+            self.menus[self.state].draw(self.screen)
     
     def draw_game(self):
         """Отрисовка игрового процесса"""
@@ -170,7 +178,7 @@ class Game:
         for firefly in self.fireflies:
             firefly.draw(self.screen)
         
-        # Туман (оригинальная версия)
+        # Туман
         self.world.draw_fog(self.screen, self.hedgehog.rect.center)
         
         # Интерфейс

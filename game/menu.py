@@ -3,9 +3,16 @@ import pygame
 from config import *
 
 class Button:
-    def __init__(self, x, y, image_path, text):
+    def __init__(self, x, y, image_path, text=None):
+        """
+        Создание кнопки
+        :param x: позиция X
+        :param y: позиция Y
+        :param image_path: путь к изображению кнопки
+        :param text: текст на кнопке (опционально)
+        """
         try:
-            self.image = pygame.image.load(image_path)
+            self.image = pygame.image.load(image_path).convert_alpha()
         except:
             # Создаем заглушку, если изображение не найдено
             self.image = pygame.Surface((200, 60))
@@ -18,15 +25,49 @@ class Button:
             self.font = pygame.font.SysFont(None, 30)
         
     def draw(self, screen):
-        """Отрисовка кнопки с текстом"""
+        """Отрисовка кнопки с текстом (если есть)"""
         screen.blit(self.image, self.rect)
-        text_surface = self.font.render(self.text, True, WHITE)
-        text_rect = text_surface.get_rect(center=self.rect.center)
-        screen.blit(text_surface, text_rect)
+        if self.text:
+            text_surface = self.font.render(self.text, True, WHITE)
+            text_rect = text_surface.get_rect(center=self.rect.center)
+            screen.blit(text_surface, text_rect)
         
     def is_clicked(self, pos):
         """Проверка клика по кнопке"""
         return self.rect.collidepoint(pos)
+
+class ToggleButton(Button):
+    """Кнопка-переключатель для музыки"""
+    def __init__(self, x, y, on_image, off_image, initial_state=True):
+        """
+        :param x: позиция X
+        :param y: позиция Y
+        :param on_image: путь к изображению для состояния "вкл"
+        :param off_image: путь к изображению для состояния "выкл"
+        :param initial_state: начальное состояние (True = вкл)
+        """
+        self.on_image = self.load_image(on_image)
+        self.off_image = self.load_image(off_image)
+        self.state = initial_state
+        super().__init__(x, y, on_image if initial_state else off_image)
+    
+    def load_image(self, path):
+        """Загрузка изображения с обработкой ошибок"""
+        try:
+            return pygame.image.load(path).convert_alpha()
+        except:
+            surf = pygame.Surface((60, 60))
+            surf.fill((0, 100, 200) if "on" in path else surf.fill((200, 100, 0))
+            return surf
+    
+    def toggle(self):
+        """Переключение состояния кнопки"""
+        self.state = not self.state
+        self.image = self.on_image if self.state else self.off_image
+    
+    def draw(self, screen):
+        """Отрисовка кнопки"""
+        screen.blit(self.image, self.rect)
 
 class Menu:
     def __init__(self, background_path):
@@ -44,7 +85,7 @@ class Menu:
             mouse_pos = pygame.mouse.get_pos()
             for button in self.buttons:
                 if button.is_clicked(mouse_pos):
-                    return button.text.lower()
+                    return button
         return None
         
     def draw(self, screen):
@@ -56,23 +97,29 @@ class Menu:
 class StartMenu(Menu):
     def __init__(self):
         super().__init__(MENU_BG)
+        # Кнопки для стартового меню
         self.buttons = [
-            Button(*START_BUTTON_POS, BUTTON_IMG, "Начать игру"),
-            Button(*QUIT_BUTTON_POS, BUTTON_IMG, "Выход")
+            Button(*START_PLAY_BUTTON_POS, PLAY_BUTTON_IMG, "Играть"),
+            ToggleButton(*START_MUSIC_BUTTON_POS, MUSIC_ON_BUTTON_IMG, MUSIC_OFF_BUTTON_IMG),
+            Button(*START_QUIT_BUTTON_POS, QUIT_BUTTON_IMG, "Выход")
         ]
 
 class DeathMenu(Menu):
     def __init__(self):
         super().__init__(DEATH_BG)
+        # Кнопки для меню смерти
         self.buttons = [
-            Button(*RESTART_BUTTON_POS, BUTTON_IMG, "Начать заново"),
-            Button(*QUIT_BUTTON_POS, BUTTON_IMG, "Выход")
+            Button(*END_PLAY_BUTTON_POS, PLAY_BUTTON_IMG, "Заново"),
+            ToggleButton(*END_MUSIC_BUTTON_POS, MUSIC_ON_BUTTON_IMG, MUSIC_OFF_BUTTON_IMG),
+            Button(*END_QUIT_BUTTON_POS, QUIT_BUTTON_IMG, "Выход")
         ]
 
 class WinMenu(Menu):
     def __init__(self):
         super().__init__(WIN_BG)
+        # Кнопки для меню победы
         self.buttons = [
-            Button(*RESTART_BUTTON_POS, BUTTON_IMG, "Играть заново"),
-            Button(*QUIT_BUTTON_POS, BUTTON_IMG, "Выход")
+            Button(*END_PLAY_BUTTON_POS, PLAY_BUTTON_IMG, "Ещё раз"),
+            ToggleButton(*END_MUSIC_BUTTON_POS, MUSIC_ON_BUTTON_IMG, MUSIC_OFF_BUTTON_IMG),
+            Button(*END_QUIT_BUTTON_POS, QUIT_BUTTON_IMG, "Выход")
         ]
