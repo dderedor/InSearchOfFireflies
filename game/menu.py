@@ -1,20 +1,11 @@
-# game/menu.py
 import pygame
 from config import *
 
 class Button:
     def __init__(self, x, y, image_path, text=None):
-        """
-        Создание кнопки
-        :param x: позиция X
-        :param y: позиция Y
-        :param image_path: путь к изображению кнопки
-        :param text: текст на кнопке (опционально)
-        """
         try:
             self.image = pygame.image.load(image_path).convert_alpha()
         except:
-            # Создаем заглушку, если изображение не найдено
             self.image = pygame.Surface((200, 60))
             self.image.fill((50, 150, 50))
         self.rect = self.image.get_rect(topleft=(x, y))
@@ -25,7 +16,6 @@ class Button:
             self.font = pygame.font.SysFont(None, 30)
         
     def draw(self, screen):
-        """Отрисовка кнопки с текстом (если есть)"""
         screen.blit(self.image, self.rect)
         if self.text:
             text_surface = self.font.render(self.text, True, WHITE)
@@ -33,41 +23,27 @@ class Button:
             screen.blit(text_surface, text_rect)
         
     def is_clicked(self, pos):
-        """Проверка клика по кнопке"""
         return self.rect.collidepoint(pos)
 
 class ToggleButton(Button):
-    """Кнопка-переключатель для музыки"""
     def __init__(self, x, y, on_image, off_image, initial_state=True):
-        """
-        :param x: позиция X
-        :param y: позиция Y
-        :param on_image: путь к изображению для состояния "вкл"
-        :param off_image: путь к изображению для состояния "выкл"
-        :param initial_state: начальное состояние (True = вкл)
-        """
-        self.on_image = self.load_image(on_image)
-        self.off_image = self.load_image(off_image)
-        self.state = initial_state
-        super().__init__(x, y, on_image if initial_state else off_image)
-    
-    def load_image(self, path):
-        """Загрузка изображения с обработкой ошибок"""
         try:
-            return pygame.image.load(path).convert_alpha()
+            self.on_image = pygame.image.load(on_image).convert_alpha()
+            self.off_image = pygame.image.load(off_image).convert_alpha()
         except:
-            surf = pygame.Surface((60, 60))
-            surf.fill((0, 100, 200) if "on" in path else surf.fill((200, 100, 0))
-            return surf
+            self.on_image = pygame.Surface((60, 60))
+            self.on_image.fill((0, 100, 200))
+            self.off_image = pygame.Surface((60, 60))
+            self.off_image.fill((200, 100, 0))
+            
+        self.state = initial_state
+        image = self.on_image if initial_state else self.off_image
+        super().__init__(x, y, "")
+        self.image = image
     
     def toggle(self):
-        """Переключение состояния кнопки"""
         self.state = not self.state
         self.image = self.on_image if self.state else self.off_image
-    
-    def draw(self, screen):
-        """Отрисовка кнопки"""
-        screen.blit(self.image, self.rect)
 
 class Menu:
     def __init__(self, background_path):
@@ -75,12 +51,10 @@ class Menu:
         try:
             self.background = pygame.image.load(background_path)
         except:
-            # Создаем заглушку для фона
             self.background = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
             self.background.fill((30, 30, 70))
         
     def handle_event(self, event):
-        """Обработка событий меню"""
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mouse_pos = pygame.mouse.get_pos()
             for button in self.buttons:
@@ -89,7 +63,6 @@ class Menu:
         return None
         
     def draw(self, screen):
-        """Отрисовка меню"""
         screen.blit(self.background, (0, 0))
         for button in self.buttons:
             button.draw(screen)
@@ -97,7 +70,6 @@ class Menu:
 class StartMenu(Menu):
     def __init__(self):
         super().__init__(MENU_BG)
-        # Кнопки для стартового меню
         self.buttons = [
             Button(*START_PLAY_BUTTON_POS, PLAY_BUTTON_IMG, "Играть"),
             ToggleButton(*START_MUSIC_BUTTON_POS, MUSIC_ON_BUTTON_IMG, MUSIC_OFF_BUTTON_IMG),
@@ -107,7 +79,6 @@ class StartMenu(Menu):
 class DeathMenu(Menu):
     def __init__(self):
         super().__init__(DEATH_BG)
-        # Кнопки для меню смерти
         self.buttons = [
             Button(*END_PLAY_BUTTON_POS, PLAY_BUTTON_IMG, "Заново"),
             ToggleButton(*END_MUSIC_BUTTON_POS, MUSIC_ON_BUTTON_IMG, MUSIC_OFF_BUTTON_IMG),
@@ -117,7 +88,6 @@ class DeathMenu(Menu):
 class WinMenu(Menu):
     def __init__(self):
         super().__init__(WIN_BG)
-        # Кнопки для меню победы
         self.buttons = [
             Button(*END_PLAY_BUTTON_POS, PLAY_BUTTON_IMG, "Ещё раз"),
             ToggleButton(*END_MUSIC_BUTTON_POS, MUSIC_ON_BUTTON_IMG, MUSIC_OFF_BUTTON_IMG),
