@@ -1,4 +1,3 @@
-# game/world.py
 import pygame
 import math
 import random
@@ -6,10 +5,14 @@ from config import *
 
 class World:
     def __init__(self):
-        # Загрузка всех изображений
-        self.grass_img = pygame.image.load('assets/image/trava.png')
-        self.leaf_img = pygame.image.load('assets/image/leaf.png')
-        self.tile_size = self.grass_img.get_width()
+        # Загрузка фонового изображения
+        try:
+            self.background = pygame.image.load(LEVEL_BG).convert()
+            self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        except:
+            # Если изображение не загружено, создаем зеленый фон
+            self.background = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            self.background.fill((100, 200, 100))
         
         # Позиции кустов
         self.bush_positions = [
@@ -17,24 +20,22 @@ class World:
             (770,400), (700,200), (650,600)
         ]
         
-        # Настройки тумана (оригинальные)
+        # Настройки тумана
         self.fog_noise = FOG_NOISE
         self.fog_color = FOG_COLOR
         
-    def draw_grass(self, screen):
-        """Отрисовка травы (фона)"""
-        screen_width, screen_height = screen.get_size()
-        for y in range(0, screen_height, self.tile_size):
-            for x in range(0, screen_width, self.tile_size):
-                screen.blit(self.grass_img, (x, y))
+    def draw_background(self, screen):
+        """Отрисовка фона (ваше изображение)"""
+        screen.blit(self.background, (0, 0))
     
     def draw_bushes(self, screen):
         """Отрисовка кустов/листьев"""
         for pos in self.bush_positions:
-            screen.blit(self.leaf_img, pos)
+            # Если у вас есть изображение куста, замените pygame.Rect на его отрисовку
+            pygame.draw.rect(screen, (34, 139, 34), pygame.Rect(pos[0], pos[1], 60, 60))
     
     def draw_fog(self, screen, hedgehog_pos):
-        """Оригинальный туман с шумом"""
+        """Туман с шумом"""
         screen_width, screen_height = screen.get_size()
         fog_surface = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
         hedgehog_center_x, hedgehog_center_y = hedgehog_pos
@@ -44,12 +45,11 @@ class World:
                 dist = math.sqrt((x - hedgehog_center_x)**2 + (y - hedgehog_center_y)**2)
                 if dist < FOG_RADIUS:
                     alpha = 0
-                elif dist < FOG_RADIUS + 40:  # Зона плавного перехода
+                elif dist < FOG_RADIUS + 40:
                     alpha = int(255 * ((dist - FOG_RADIUS) / 40))
                 else:
                     alpha = 255
                 
-                # Добавляем шум для атмосферности
                 noise = random.randint(-self.fog_noise, self.fog_noise)
                 alpha = max(0, min(255, alpha + noise))
                 

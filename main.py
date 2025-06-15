@@ -4,6 +4,7 @@ import random
 from game.hero import Hedgehog, Firefly, Mob
 from game.world import World
 from game.menu import StartMenu, DeathMenu, WinMenu, ToggleButton
+from game.particles import Particle
 from config import *
 
 class Game:
@@ -58,7 +59,15 @@ class Game:
             self.font = pygame.font.SysFont(None, 30)
         
         self.clock = pygame.time.Clock()
-        self.last_monster_sound_time = 0  # Для отслеживания времени звука монстра
+        self.last_monster_sound_time = 0
+        self.last_step_time = 0
+        self.particles = []
+        
+        # Создаем фоновые частицы
+        for _ in range(PARTICLE_COUNT):
+            x = random.randint(0, SCREEN_WIDTH)
+            y = random.randint(0, SCREEN_HEIGHT)
+            self.particles.append(Particle(x, y))
     
     def reset_game(self):
         self.world = World()
@@ -68,6 +77,16 @@ class Game:
         self.collected_fireflies = 0
         self.current_level = 1
         self.last_monster_sound_time = pygame.time.get_ticks()
+        self.last_step_time = pygame.time.get_ticks()
+        
+        # Очищаем частицы
+        self.particles = []
+        
+        # Создаем новые фоновые частицы
+        for _ in range(PARTICLE_COUNT):
+            x = random.randint(0, SCREEN_WIDTH)
+            y = random.randint(0, SCREEN_HEIGHT)
+            self.particles.append(Particle(x, y))
     
     def run(self):
         running = True
@@ -117,20 +136,28 @@ class Game:
         return True
     
     def handle_playing(self, events, current_time):
+        # Обработка шагов ёжика
+        keys = pygame.key.get_pressed()
+        moved, old_pos = self.hedgehog.move(keys, SCREEN_WIDTH, SCREEN_HEIGHT)
+        
+        # Воспроизведение звука шагов
+        if moved and current_time - self.last_step_time > STEP_SOUND_INTERVAL:
+            if self.sounds.get('step'):
+                self.sounds['step'].play()
+            self.last_step_time = current_time
+        
+        # Сбор светлячков
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
                 for firefly in self.fireflies[:]:
                     if self.hedgehog.rect.colliderect(firefly.rect):
                         self.collected_fireflies += 1
                         self.fireflies.remove(firefly)
-                        # Воспроизводим звук сбора светлячка
+                        # Воспроизводим звук сбора
                         if self.sounds.get('collect'):
                             self.sounds['collect'].play()
                         if self.collected_fireflies < LEVEL_GOALS[self.current_level]:
                             self.fireflies.append(Firefly())
-        
-        keys = pygame.key.get_pressed()
-        self.hedgehog.move(keys, SCREEN_WIDTH, SCREEN_HEIGHT)
         
         # Звук монстра
         if current_time - self.last_monster_sound_time > MONSTER_SOUND_INTERVAL:
@@ -140,7 +167,7 @@ class Game:
                                 (self.hedgehog.rect.y - mob.rect.y)**2)
                 if dist < MONSTER_SOUND_RADIUS and self.sounds.get('monster'):
                     self.sounds['monster'].play()
-                    break  # Воспроизводим только для одного монстра
+                    break
             self.last_monster_sound_time = current_time
         
         # Логика уровней
@@ -150,29 +177,64 @@ class Game:
             
             if self.current_level > len(LEVEL_GOALS):
                 self.state = "win"
+                if self.sounds.get('win'):
+                    self.sounds['win'].play()
             else:
                 self.fireflies = [Firefly()]
                 if self.current_level in MOB_SPEEDS:
-                    # Создаем мобов с разными изображениями для разных уровней
+                    # Создаем мобов с безопасным спавном
                     if self.current_level == 2:
                         # На 2 уровне - 1 моб типа 1
-                        self.mobs = [Mob(MOB_SPEEDS[self.current_level], self.current_level)]
+                        self.mobs = [
+                            Mob(
+                                MOB_SPEEDS[self.current_level], 
+                                self.current_level,
+                                safe_position=(self.hedgehog.rect.x, self.hedgehog.rect.y)
+                            )
+                        ]
                     elif self.current_level == 3:
                         # На 3 уровне - 2 моба разных типов
                         self.mobs = [
-                            Mob(MOB_SPEEDS[self.current_level], self.current_level, "type2"),
-                            Mob(MOB_SPEEDS[self.current_level], self.current_level, "type3")
+                            Mob(
+                                MOB_SPEEDS[self.current_level], 
+                                self.current_level, 
+                                "type2",
+                                safe_position=(self.hedgehog.rect.x, self.hedgehog.rect.y)
+                            ),
+                            Mob(
+                                MOB_SPEEDS[self.current_level], 
+                                self.current_level, 
+                                "type3",
+                                safe_position=(self.hedgehog.rect.x, self.hedgehog.rect.y)
+                            )
                         ]
         
-        # Движение мобов
+        # Движение мобов и проверка столкновений
         for mob in self.mobs:
-            mob.chase(self.hedgehog.rect)
-            if self.hedgehog.rect.colliderect(mob.rect):
+            collided = mob.chase(self.hedgehog.rect)
+            if collided:
                 self.state = "death"
+                if self.sounds.get('death'):
+                    self.sounds['death'].play()
         
-        # Обновление светлячков
+        # Обновление светлячков и создание частиц
         for firefly in self.fireflies:
-            firefly.update()
+            if firefly.update():  # Возвращает True, когда нужно создать частицу
+                # Создаем частицу у светлячка
+                self.particles.append(Particle(
+                    firefly.rect.centerx,
+                    firefly.rect.centery,
+                    is_background=False
+                ))
+        
+        # Добавление случайных фоновых частиц
+        if random.random() < PARTICLE_SPAWN_CHANCE:
+            x = random.randint(0, SCREEN_WIDTH)
+            y = random.randint(0, SCREEN_HEIGHT)
+            self.particles.append(Particle(x, y))
+        
+        # Обновление частиц
+        self.particles = [p for p in self.particles if p.update()]
     
     def draw(self):
         if self.state == "playing":
@@ -181,18 +243,26 @@ class Game:
             self.menus[self.state].draw(self.screen)
     
     def draw_game(self):
-        self.screen.fill(BLACK)
+        # Отрисовка фона
+        self.world.draw_background(self.screen)
         
-        # Отрисовка мира
-        self.world.draw_grass(self.screen)
+        # Отрисовка кустов
         self.world.draw_bushes(self.screen)
+        
+        # Отрисовка светлячков
+        for firefly in self.fireflies:
+            firefly.draw(self.screen)
+        
+        # Отрисовка ёжика
         self.hedgehog.draw(self.screen)
         
+        # Отрисовка мобов
         for mob in self.mobs:
             mob.draw(self.screen)
         
-        for firefly in self.fireflies:
-            firefly.draw(self.screen)
+        # Отрисовка частиц (над всеми объектами, но под туманом)
+        for particle in self.particles:
+            particle.draw(self.screen)
         
         # Туман
         self.world.draw_fog(self.screen, self.hedgehog.rect.center)
