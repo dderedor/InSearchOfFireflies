@@ -1,8 +1,8 @@
 # Основные настройки
 SCREEN_WIDTH = 960
 SCREEN_HEIGHT = 768
-LEVEL_GOALS = {1: 3, 2: 5, 3: 7}
-MOB_SPEEDS = {2: 1.5, 3: 2.5}
+LEVEL_GOALS = {1: 1, 2: 1, 3: 1}  # Изменено количество светлячков
+MOB_SPEEDS = {2: 1.5, 3: 1.5}
 HEDGEHOG_START_POS = (430, 600)
 
 # Настройки тумана
@@ -13,7 +13,7 @@ FOG_COLOR = (192, 192, 192)
 # Цвета
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-RED = (139, 0, 0)  # Ваш красный цвет
+RED = (139, 0, 0)
 
 # Пути к изображениям меню
 MENU_BG = 'assets/image/menu_bg.png'
@@ -26,19 +26,51 @@ QUIT_BUTTON_IMG = 'assets/image/quit_button.png'
 MUSIC_ON_BUTTON_IMG = 'assets/image/music_on.png'
 MUSIC_OFF_BUTTON_IMG = 'assets/image/music_off.png'
 
+# Пути к изображениям мобов (разные для каждого типа)
+MOB_IMAGES = {
+    "type1": 'assets/image/mob1.png',  # Моб для 2 уровня
+    "type2": 'assets/image/mob2.png',  # Первый моб для 3 уровня
+    "type3": 'assets/image/mob3.png'   # Второй моб для 3 уровня
+}
+
 # Путь к музыкальному файлу
-MUSIC_FILE = 'assets/sound/game_music.mp3'  # Поддерживает .mp3 и .ogg
+MUSIC_FILE = 'assets/sound/game_music.mp3'
 
-# Громкость музыки (от 0.0 до 1.0)
+# Звуковые эффекты
+SOUND_EFFECTS = {
+    'collect': 'assets/sound/collect.wav',  # Сбор светлячка
+    'monster': 'assets/sound/monster.wav'   # Звук монстра
+}
+
+# Громкость
 MUSIC_VOLUME = 0.5
+SOUND_VOLUME = 0.7
 
-# Позиции кнопок (ЗДЕСЬ МОЖНО МЕНЯТЬ РАСПОЛОЖЕНИЕ КНОПОК!)
-# Для стартового меню
-START_PLAY_BUTTON_POS = (700, 350)    # (x, y) - координаты кнопки "Играть"
-START_MUSIC_BUTTON_POS = (500, 350)   # (x, y) - координаты кнопки музыки
-START_QUIT_BUTTON_POS = (600, 350)    # (x, y) - координаты кнопки "Выход"
+# Интервал звука монстра (в миллисекундах)
+MONSTER_SOUND_INTERVAL = 3000  # 3 секунды
 
-# Для меню смерти и победы
-END_PLAY_BUTTON_POS = (550, 550)     # (x, y) - координаты кнопки "Играть заново"
-END_MUSIC_BUTTON_POS = (350, 550)    # (x, y) - координаты кнопки музыки
-END_QUIT_BUTTON_POS = (450, 550)    # (x, y) - координаты кнопки "Выход"
+# Радиус активации звука монстра
+MONSTER_SOUND_RADIUS = 300  # Пикселей
+
+# Позиции кнопок для КАЖДОГО МЕНЮ ОТДЕЛЬНО
+
+# Стартовое меню
+START_MENU_BUTTONS = {
+    "play": (700, 350),   # Кнопка "Играть"
+    "music": (500, 350),  # Кнопка музыки
+    "quit": (600, 350)    # Кнопка "Выход"
+}
+
+# Меню смерти
+DEATH_MENU_BUTTONS = {
+    "play": (550, 400),   # Кнопка "Заново"
+    "music": (350, 400),  # Кнопка музыки
+    "quit": (450, 400)    # Кнопка "Выход"
+}
+
+# Меню победы
+WIN_MENU_BUTTONS = {
+    "play": (550, 380),   # Кнопка "Играть заново"
+    "music": (350, 380),  # Кнопка музыки
+    "quit": (450, 380)    # Кнопка "Выход"
+}

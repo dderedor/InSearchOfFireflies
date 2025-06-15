@@ -46,13 +46,20 @@ class ToggleButton(Button):
         self.image = self.on_image if self.state else self.off_image
 
 class Menu:
-    def __init__(self, background_path):
+    def __init__(self, background_path, buttons_config):
         self.buttons = []
         try:
             self.background = pygame.image.load(background_path)
         except:
             self.background = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
             self.background.fill((30, 30, 70))
+        
+        # Создаем кнопки на основе конфигурации
+        self.buttons = [
+            Button(buttons_config["play"][0], buttons_config["play"][1], PLAY_BUTTON_IMG, "Играть"),
+            ToggleButton(buttons_config["music"][0], buttons_config["music"][1], MUSIC_ON_BUTTON_IMG, MUSIC_OFF_BUTTON_IMG),
+            Button(buttons_config["quit"][0], buttons_config["quit"][1], QUIT_BUTTON_IMG, "Выход")
+        ]
         
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -69,27 +76,16 @@ class Menu:
 
 class StartMenu(Menu):
     def __init__(self):
-        super().__init__(MENU_BG)
-        self.buttons = [
-            Button(*START_PLAY_BUTTON_POS, PLAY_BUTTON_IMG, "Играть"),
-            ToggleButton(*START_MUSIC_BUTTON_POS, MUSIC_ON_BUTTON_IMG, MUSIC_OFF_BUTTON_IMG),
-            Button(*START_QUIT_BUTTON_POS, QUIT_BUTTON_IMG, "Выход")
-        ]
+        super().__init__(MENU_BG, START_MENU_BUTTONS)
 
 class DeathMenu(Menu):
     def __init__(self):
-        super().__init__(DEATH_BG)
-        self.buttons = [
-            Button(*END_PLAY_BUTTON_POS, PLAY_BUTTON_IMG, "Заново"),
-            ToggleButton(*END_MUSIC_BUTTON_POS, MUSIC_ON_BUTTON_IMG, MUSIC_OFF_BUTTON_IMG),
-            Button(*END_QUIT_BUTTON_POS, QUIT_BUTTON_IMG, "Выход")
-        ]
+        super().__init__(DEATH_BG, DEATH_MENU_BUTTONS)
+        # Переименовываем кнопку "Играть" в "Заново"
+        self.buttons[0].text = "Заново"
 
 class WinMenu(Menu):
     def __init__(self):
-        super().__init__(WIN_BG)
-        self.buttons = [
-            Button(*END_PLAY_BUTTON_POS, PLAY_BUTTON_IMG, "Ещё раз"),
-            ToggleButton(*END_MUSIC_BUTTON_POS, MUSIC_ON_BUTTON_IMG, MUSIC_OFF_BUTTON_IMG),
-            Button(*END_QUIT_BUTTON_POS, QUIT_BUTTON_IMG, "Выход")
-        ]
+        super().__init__(WIN_BG, WIN_MENU_BUTTONS)
+        # Переименовываем кнопку "Играть" в "Ещё раз"
+        self.buttons[0].text = "Ещё раз"

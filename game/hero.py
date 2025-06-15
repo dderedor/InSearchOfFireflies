@@ -1,9 +1,8 @@
-# game/hero.py
 import pygame
 import math
 import random
 from .game_object import GameObject
-from config import HEDGEHOG_START_POS
+from config import HEDGEHOG_START_POS, SCREEN_WIDTH, SCREEN_HEIGHT, MOB_IMAGES
 
 class Hedgehog(GameObject):
     def __init__(self):
@@ -45,9 +44,10 @@ class Hedgehog(GameObject):
 
 class Firefly(GameObject):
     def __init__(self):
+        # Убедимся, что светлячок не появляется за границами экрана
         super().__init__(
-            random.randint(0, 960 - 32), 
-            random.randint(0, 768 - 32),
+            random.randint(50, SCREEN_WIDTH - 82),  # 50-82 - отступы от краев
+            random.randint(50, SCREEN_HEIGHT - 82),
             'assets/image/fly.png'
         )
         self.alpha = 255
@@ -59,13 +59,32 @@ class Firefly(GameObject):
         self.image.set_alpha(self.alpha)
 
 class Mob(GameObject):
-    def __init__(self, speed):
+    def __init__(self, speed, level, mob_type=None):
+        """
+        Инициализация моба
+        :param speed: скорость моба
+        :param level: уровень игры
+        :param mob_type: тип моба (для 3 уровня: "type2" или "type3")
+        """
+        # Определяем изображение в зависимости от уровня и типа
+        if level == 2:
+            image_path = MOB_IMAGES["type1"]  # Моб для 2 уровня
+        elif level == 3:
+            if mob_type == "type2":
+                image_path = MOB_IMAGES["type2"]  # Первый тип моба для 3 уровня
+            else:
+                image_path = MOB_IMAGES["type3"]  # Второй тип моба для 3 уровня
+        else:
+            image_path = 'assets/image/okak.png'  # Запасное изображение
+        
         super().__init__(
-            random.randint(0, 960 - 64), 
-            random.randint(0, 768 - 64),
-            'assets/image/okak.png'
+            random.randint(0, SCREEN_WIDTH - 64), 
+            random.randint(0, SCREEN_HEIGHT - 64),
+            image_path
         )
         self.speed = speed
+        self.level = level
+        self.mob_type = mob_type
 
     def chase(self, target_rect):
         dx = target_rect.x - self.rect.x

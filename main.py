@@ -1,4 +1,6 @@
 import pygame
+import math
+import random
 from game.hero import Hedgehog, Firefly, Mob
 from game.world import World
 from game.menu import StartMenu, DeathMenu, WinMenu, ToggleButton
@@ -17,6 +19,16 @@ class Game:
             pygame.display.set_icon(icon)
         except:
             pass
+        
+        # Загрузка звуков
+        self.sounds = {}
+        for key, path in SOUND_EFFECTS.items():
+            try:
+                self.sounds[key] = pygame.mixer.Sound(path)
+                self.sounds[key].set_volume(SOUND_VOLUME)
+            except Exception as e:
+                print(f"Ошибка загрузки звука {key}: {e}")
+                self.sounds[key] = None
         
         # Инициализация музыки
         self.music_on = True
@@ -46,7 +58,8 @@ class Game:
             self.font = pygame.font.SysFont(None, 30)
         
         self.clock = pygame.time.Clock()
-        
+        self.last_monster_sound_time = 0  # Для отслеживания времени звука монстра
+    
     def reset_game(self):
         self.world = World()
         self.hedgehog = Hedgehog()
@@ -54,11 +67,13 @@ class Game:
         self.mobs = []
         self.collected_fireflies = 0
         self.current_level = 1
+        self.last_monster_sound_time = pygame.time.get_ticks()
     
     def run(self):
         running = True
         
         while running:
+            current_time = pygame.time.get_ticks()
             events = pygame.event.get()
             for event in events:
                 if event.type == pygame.QUIT:
@@ -70,7 +85,7 @@ class Game:
                             running = False
             
             if self.state == "playing":
-                self.handle_playing(events)
+                self.handle_playing(events, current_time)
             
             self.draw()
             pygame.display.update()
@@ -79,7 +94,6 @@ class Game:
         pygame.quit()
     
     def handle_menu_button(self, button):
-        # Кнопка музыки
         if isinstance(button, ToggleButton):
             button.toggle()
             self.music_on = button.state
@@ -90,8 +104,6 @@ class Game:
                     pass
             else:
                 pygame.mixer.music.stop()
-        
-        # Кнопка игры
         elif button.text in ["Играть", "Заново", "Ещё раз"]:
             self.reset_game()
             self.state = "playing"
@@ -100,26 +112,38 @@ class Game:
                     pygame.mixer.music.play(-1)
                 except:
                     pass
-        
-        # Кнопка выхода
         elif button.text == "Выход":
-            return False  # Выход из игры
-        
+            return False
         return True
     
-    def handle_playing(self, events):
+    def handle_playing(self, events, current_time):
         for event in events:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_e:
                 for firefly in self.fireflies[:]:
                     if self.hedgehog.rect.colliderect(firefly.rect):
                         self.collected_fireflies += 1
                         self.fireflies.remove(firefly)
+                        # Воспроизводим звук сбора светлячка
+                        if self.sounds.get('collect'):
+                            self.sounds['collect'].play()
                         if self.collected_fireflies < LEVEL_GOALS[self.current_level]:
                             self.fireflies.append(Firefly())
         
         keys = pygame.key.get_pressed()
         self.hedgehog.move(keys, SCREEN_WIDTH, SCREEN_HEIGHT)
         
+        # Звук монстра
+        if current_time - self.last_monster_sound_time > MONSTER_SOUND_INTERVAL:
+            for mob in self.mobs:
+                # Расстояние до ёжика
+                dist = math.sqrt((self.hedgehog.rect.x - mob.rect.x)**2 + 
+                                (self.hedgehog.rect.y - mob.rect.y)**2)
+                if dist < MONSTER_SOUND_RADIUS and self.sounds.get('monster'):
+                    self.sounds['monster'].play()
+                    break  # Воспроизводим только для одного монстра
+            self.last_monster_sound_time = current_time
+        
+        # Логика уровней
         if self.collected_fireflies >= LEVEL_GOALS[self.current_level]:
             self.current_level += 1
             self.collected_fireflies = 0
@@ -129,13 +153,24 @@ class Game:
             else:
                 self.fireflies = [Firefly()]
                 if self.current_level in MOB_SPEEDS:
-                    self.mobs = [Mob(MOB_SPEEDS[self.current_level]) for _ in range(self.current_level-1)]
+                    # Создаем мобов с разными изображениями для разных уровней
+                    if self.current_level == 2:
+                        # На 2 уровне - 1 моб типа 1
+                        self.mobs = [Mob(MOB_SPEEDS[self.current_level], self.current_level)]
+                    elif self.current_level == 3:
+                        # На 3 уровне - 2 моба разных типов
+                        self.mobs = [
+                            Mob(MOB_SPEEDS[self.current_level], self.current_level, "type2"),
+                            Mob(MOB_SPEEDS[self.current_level], self.current_level, "type3")
+                        ]
         
+        # Движение мобов
         for mob in self.mobs:
             mob.chase(self.hedgehog.rect)
             if self.hedgehog.rect.colliderect(mob.rect):
                 self.state = "death"
         
+        # Обновление светлячков
         for firefly in self.fireflies:
             firefly.update()
     
@@ -162,10 +197,10 @@ class Game:
         # Туман
         self.world.draw_fog(self.screen, self.hedgehog.rect.center)
         
-        # Счетчик (рисуем поверх тумана)
+        # Счетчик
         text = self.font.render(
             f"Найдено: {self.collected_fireflies}/{LEVEL_GOALS[self.current_level]}", 
-            True, RED  # Ваш красный цвет
+            True, RED
         )
         self.screen.blit(text, (10, 10))
 
