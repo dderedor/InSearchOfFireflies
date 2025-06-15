@@ -14,10 +14,18 @@ class World:
             self.background = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
             self.background.fill((100, 200, 100))
         
+        # Загрузка изображения куста
+        try:
+            self.bush_img = pygame.image.load('assets/image/leaf.png').convert_alpha()
+        except:
+            # Если изображение не загружено, создаем зеленый квадрат
+            self.bush_img = pygame.Surface((60, 60))
+            self.bush_img.fill((34, 139, 34))
+        
         # Позиции кустов
         self.bush_positions = [
-            (20,100), (150,300), (60,550),
-            (770,400), (700,200), (650,600)
+            (20, 100), (150, 300), (60, 550),
+            (770, 400), (700, 200), (650, 600)
         ]
         
         # Настройки тумана
@@ -25,14 +33,13 @@ class World:
         self.fog_color = FOG_COLOR
         
     def draw_background(self, screen):
-        """Отрисовка фона (ваше изображение)"""
+        """Отрисовка фона"""
         screen.blit(self.background, (0, 0))
     
     def draw_bushes(self, screen):
-        """Отрисовка кустов/листьев"""
+        """Отрисовка кустов"""
         for pos in self.bush_positions:
-            # Если у вас есть изображение куста, замените pygame.Rect на его отрисовку
-            pygame.draw.rect(screen, (34, 139, 34), pygame.Rect(pos[0], pos[1], 60, 60))
+            screen.blit(self.bush_img, pos)
     
     def draw_fog(self, screen, hedgehog_pos):
         """Туман с шумом"""

@@ -245,6 +245,9 @@ class Game:
     def draw_game(self):
         # Отрисовка фона
         self.world.draw_background(self.screen)
+
+        # Отрисовка ёжика
+        self.hedgehog.draw(self.screen)
         
         # Отрисовка кустов
         self.world.draw_bushes(self.screen)
@@ -253,8 +256,7 @@ class Game:
         for firefly in self.fireflies:
             firefly.draw(self.screen)
         
-        # Отрисовка ёжика
-        self.hedgehog.draw(self.screen)
+
         
         # Отрисовка мобов
         for mob in self.mobs:
