@@ -271,7 +271,7 @@ class Game:
         
         # Счетчик
         text = self.font.render(
-            f"Найдено: {self.collected_fireflies}/{LEVEL_GOALS[self.current_level]}", 
+            f"Score: {self.collected_fireflies}/{LEVEL_GOALS[self.current_level]}", 
             True, RED
         )
         self.screen.blit(text, (10, 10))
