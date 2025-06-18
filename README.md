@@ -4,13 +4,15 @@
    - При установке отметьте галочку `Add Python to PATH`
 
 2. Установите библиотеки
-pip install pygame...
+pip install pygame
+pip install math
+pip install random
    
-3. Скачайте игру:
+4. Скачайте игру:
 git clone https://github.com/ваш-логин/ваш-репозиторий.git
 cd ваш-репозиторий
 
-4. Запустите игру:
+5. Запустите игру:
 python main.py
 
 
